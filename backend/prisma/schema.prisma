@@ -1,0 +1,341 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model batches {
+  id                  Int                   @id @default(autoincrement())
+  product_id          Int?
+  batch_number        String                @db.VarChar(50)
+  quantity            Int                   @default(0)
+  expiry_date         DateTime              @db.Date
+  promo_price         Decimal?              @db.Decimal(10, 2)
+  unit_cost           Decimal?              @db.Decimal(10, 2)
+  location            String?               @db.VarChar(50)
+  products            products?             @relation(fields: [product_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_batches_product")
+  sale_items          sale_items[]
+  inventory_movements inventory_movements[]
+
+  @@index([product_id], map: "product_id")
+}
+
+model products {
+  id                   Int                     @id @default(autoincrement())
+  sku                  String                  @unique(map: "sku") @db.VarChar(12)
+  name                 String                  @db.VarChar(150)
+  active_substance     String?                 @db.VarChar(150)
+  description          String?                 @db.Text
+  base_price           Decimal                 @db.Decimal(10, 2)
+  brand                String?                 @db.VarChar(100)
+  category             String?                 @db.VarChar(50)
+  supplier_id          Int?
+  min_stock            Int                     @default(10)
+  tax_rate             Decimal                 @default(0) @db.Decimal(5, 2)
+  batches              batches[]
+  suppliers            suppliers?              @relation(fields: [supplier_id], references: [id], onDelete: SetNull, onUpdate: Restrict)
+  purchase_order_items purchase_order_items[]
+  prescription_items   prescription_items[]
+  price_history        product_price_history[]
+
+  @@index([supplier_id], map: "supplier_id")
+}
+
+model roles {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique(map: "name") @db.VarChar(20)
+  users users[]
+}
+
+model sale_items {
+  id            Int      @id @default(autoincrement())
+  sale_id       Int?
+  batch_id      Int?
+  quantity      Int
+  price_at_sale Decimal  @db.Decimal(10, 2)
+  tax_amount    Decimal  @default(0) @db.Decimal(10, 2)
+  batches       batches? @relation(fields: [batch_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_saleitems_batch")
+  sales         sales?   @relation(fields: [sale_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_saleitems_sale")
+
+  @@index([batch_id], map: "batch_id")
+  @@index([sale_id], map: "sale_id")
+}
+
+model sales {
+  id              Int            @id @default(autoincrement())
+  user_id         Int?
+  prescription_id Int?
+  sale_date       DateTime?      @default(now()) @db.Timestamp(0)
+  total_amount    Decimal        @db.Decimal(10, 2)
+  total_tax       Decimal        @default(0) @db.Decimal(10, 2)
+  amount_paid     Decimal?       @db.Decimal(10, 2)
+  payment_method  String         @default("cash") @db.VarChar(10)
+  status          String         @default("completed") @db.VarChar(15)
+  voided_by       Int?
+  void_reason     String?        @db.VarChar(255)
+  sale_items      sale_items[]
+  users           users?         @relation("user_sales", fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_sales_user")
+  voiding_user    users?         @relation("voiding_user", fields: [voided_by], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  prescriptions   prescriptions? @relation(fields: [prescription_id], references: [id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@index([user_id], map: "user_id")
+  @@index([voided_by], map: "voided_by_idx")
+  @@index([prescription_id], map: "prescription_id_idx")
+}
+
+model users {
+  id                   Int     @id @default(autoincrement())
+  name                 String  @db.VarChar(100)
+  email                String  @unique(map: "email") @db.VarChar(100)
+  password             String  @db.VarChar(255)
+  role_id              Int?
+  is_active            Boolean @default(true)
+  medical_license      String? @db.VarChar(50)
+  professional_license String? @db.VarChar(50)
+
+  // -- Nuevos campos para el perfil médico --
+  specialty        String?  @db.VarChar(150)
+  phone            String?  @db.VarChar(20)
+  alma_mater       String?  @db.VarChar(150)
+  working_hours    Json?
+  consultation_fee Decimal? @db.Decimal(10, 2)
+  signature_url    String?  @db.VarChar(255)
+  consulting_room  String?  @db.VarChar(50)
+
+  appointments        appointments[]
+  sales               sales[]                 @relation("user_sales")
+  consultations       consultations[]
+  purchase_orders     purchase_orders[]
+  inventory_movements inventory_movements[]
+  voided_sales        sales[]                 @relation("voiding_user")
+  cash_audits         cash_audits[]
+  price_history       product_price_history[]
+  roles               roles?                  @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_users_role")
+
+  @@index([role_id], map: "fk_users_role")
+}
+
+model patients {
+  id                       Int             @id @default(autoincrement())
+  patient_code             String          @unique @db.VarChar(50)
+  first_name               String          @db.VarChar(100)
+  last_name                String          @db.VarChar(100)
+  email                    String?         @db.VarChar(100)
+  gender                   String?         @db.VarChar(15)
+  date_of_birth            DateTime        @db.Date
+  phone                    String?         @db.VarChar(20)
+  address                  String?         @db.Text
+  blood_type               String?         @db.VarChar(5)
+  family_history           String?         @db.Text
+  pathological_history     String?         @db.Text
+  non_pathological_history String?         @db.Text
+  has_allergies            Boolean         @default(false)
+  allergies_detail         String?         @db.Text
+  medical_history          String?         @db.Text
+  is_incomplete            Boolean         @default(false)
+  is_active                Boolean         @default(true)
+  created_at               DateTime?       @default(now()) @db.Timestamp(0)
+  appointments             appointments[]
+  consultations            consultations[]
+}
+
+model consultations {
+  id         Int @id @default(autoincrement())
+  patient_id Int
+  doctor_id  Int
+
+  doctor_name_snapshot String? @db.VarChar(150)
+  doctor_license       String? @db.VarChar(50)
+
+  // Signos Vitales
+  temperature        Decimal? @db.Decimal(5, 2)
+  weight             Decimal? @db.Decimal(5, 2)
+  height             Decimal? @db.Decimal(5, 2)
+  bmi                Decimal? @db.Decimal(5, 2)
+  blood_pressure_sys Int?
+  blood_pressure_dia Int?
+  heart_rate         Int?
+  respiratory_rate   Int?
+  oxygen_saturation  Int?
+  abdominal_circ     Decimal? @db.Decimal(5, 2)
+
+  // Notas SOAP
+  symptom_subjective String? @db.Text
+  symptom_objective  String? @db.Text
+  analysis           String? @db.Text
+  plan               String? @db.Text
+
+  // Diagnóstico CIE-10
+  cie10_code String? @db.VarChar(10)
+  diagnosis  String? @db.Text // Descripción principal
+
+  // Legado
+  treatment String? @db.Text
+  notes     String? @db.Text
+
+  is_finalized       Boolean   @default(false)
+  finalized_at       DateTime? @db.Timestamp(0)
+  consultation_date  DateTime  @default(now()) @db.Timestamp(0)
+  end_treatment_date DateTime? @db.Date
+
+  photos             Json?
+
+  patients      patients       @relation(fields: [patient_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  users         users          @relation(fields: [doctor_id], references: [id], onUpdate: Restrict)
+  cie10_catalog cie10_catalog? @relation(fields: [cie10_code], references: [code], onDelete: SetNull, onUpdate: Cascade)
+
+  prescriptions prescriptions[]
+
+  @@index([patient_id], map: "consultations_patient_id")
+  @@index([doctor_id], map: "consultations_doctor_id")
+  @@index([cie10_code], map: "consultations_cie10_code")
+}
+
+model cie10_catalog {
+  code          String          @id @db.VarChar(10)
+  description   String          @db.VarChar(255)
+  is_custom     Boolean         @default(false)
+  consultations consultations[]
+}
+
+model prescriptions {
+  id              Int      @id @default(autoincrement())
+  consultation_id Int
+  created_at      DateTime @default(now()) @db.Timestamp(0)
+
+  items prescription_items[]
+  sales sales[]
+
+  consultations consultations @relation(fields: [consultation_id], references: [id], onDelete: Cascade)
+}
+
+model prescription_items {
+  id              Int     @id @default(autoincrement())
+  prescription_id Int
+  product_id      Int?
+  medication_name String  @db.VarChar(150)
+  dosage          String  @db.VarChar(50)
+  frequency       String  @db.VarChar(50)
+  duration        String  @db.VarChar(50)
+  notes           String? @db.Text
+  quantity        Int?
+
+  prescriptions prescriptions @relation(fields: [prescription_id], references: [id], onDelete: Cascade)
+  products      products?     @relation(fields: [product_id], references: [id], onDelete: SetNull)
+
+  @@index([prescription_id], map: "prescription_id_idx")
+  @@index([product_id], map: "rx_product_id_idx")
+}
+
+model appointments {
+  id               Int               @id @default(autoincrement())
+  patient_id       Int
+  doctor_id        Int
+  appointment_date DateTime          @db.Timestamp(0)
+  status           AppointmentStatus @default(SCHEDULED)
+  reason           String?           @db.VarChar(255)
+  source           String            @default("Presencial") @db.VarChar(50)
+  created_at       DateTime?         @default(now()) @db.Timestamp(0)
+  users            users             @relation(fields: [doctor_id], references: [id], onUpdate: Restrict)
+  patients         patients          @relation(fields: [patient_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([doctor_id, appointment_date], name: "doctor_appointment_unique")
+  @@index([patient_id], map: "patient_id")
+  @@index([doctor_id], map: "doctor_id")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model suppliers {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(150)
+  contact_name    String?           @db.VarChar(150)
+  phone           String?           @db.VarChar(20)
+  email           String?           @db.VarChar(100)
+  lead_time_days  Int?
+  is_active       Boolean           @default(true)
+  products        products[]
+  purchase_orders purchase_orders[]
+}
+
+model purchase_orders {
+  id                     Int                    @id @default(autoincrement())
+  supplier_id            Int
+  user_id                Int
+  status                 String                 @default("PENDING") @db.VarChar(20)
+  order_date             DateTime               @default(now()) @db.Timestamp(0)
+  expected_delivery_date DateTime?              @db.Date
+  received_date          DateTime?              @db.Timestamp(0)
+  total_amount           Decimal                @default(0) @db.Decimal(10, 2)
+  suppliers              suppliers              @relation(fields: [supplier_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  users                  users                  @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  items                  purchase_order_items[]
+
+  @@index([supplier_id], map: "po_supplier_id")
+  @@index([user_id], map: "po_user_id")
+}
+
+model purchase_order_items {
+  id                Int             @id @default(autoincrement())
+  purchase_order_id Int
+  product_id        Int
+  quantity          Int
+  unit_cost         Decimal         @db.Decimal(10, 2)
+  purchase_orders   purchase_orders @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  products          products        @relation(fields: [product_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([purchase_order_id], map: "poi_purchase_order_id")
+  @@index([product_id], map: "poi_product_id")
+}
+
+model inventory_movements {
+  id                Int      @id @default(autoincrement())
+  batch_id          Int
+  user_id           Int
+  movement_type     String   @db.VarChar(50)
+  quantity          Int
+  previous_quantity Int?
+  new_quantity      Int?
+  notes             String?  @db.Text
+  created_at        DateTime @default(now()) @db.Timestamp(0)
+
+  batches batches @relation(fields: [batch_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  users   users   @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([batch_id], map: "inv_mov_batch_id")
+  @@index([user_id], map: "inv_mov_user_id")
+}
+
+model cash_audits {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  expected_amount Decimal  @db.Decimal(10, 2)
+  counted_amount  Decimal  @db.Decimal(10, 2)
+  difference      Decimal  @db.Decimal(10, 2)
+  notes           String?  @db.Text
+  created_at      DateTime @default(now()) @db.Timestamp(0)
+  users           users    @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([user_id], map: "cash_audits_user_id")
+}
+
+model product_price_history {
+  id         Int      @id @default(autoincrement())
+  product_id Int
+  user_id    Int
+  old_price  Decimal  @db.Decimal(10, 2)
+  new_price  Decimal  @db.Decimal(10, 2)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  products   products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([product_id], map: "pph_product_id")
+  @@index([user_id], map: "pph_user_id")
+}

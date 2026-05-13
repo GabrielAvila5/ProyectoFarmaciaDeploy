@@ -1,0 +1,73 @@
+﻿# ========================
+# Dependencias
+# ========================
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# ========================
+# Variables de entorno
+# ========================
+**/.env
+.env
+backend/.env
+frontend/.env
+
+# ========================
+# Builds / compilados
+# ========================
+dist/
+backend/dist/
+frontend/dist/
+backend/tsconfig.tsbuildinfo
+
+# ========================
+# Logs
+# ========================
+*.log
+logs/
+backend/logs/
+frontend/build.log
+backend/build_errors.txt
+backend/format.log
+backend/seed_error.log
+backend/test_output.txt
+backend/ts_errors.txt
+backend/ts_errors2.txt
+backend/ts_errors3.txt
+backend/validate.log
+frontend/build.txt
+frontend/build_errors.txt
+frontend/ts_errors.log
+frontend/ts_errors.txt
+
+# ========================
+# Archivos de pruebas locales
+# ========================
+backend/test-*.js
+backend/seed_cie10.ts
+backend/update_dashboard.js
+
+# ========================
+# Uploads (archivos de usuarios)
+# ========================
+backend/uploads/
+
+# ========================
+# Prisma migrations (opcional, quitar si quieres versionar migraciones)
+# ========================
+# backend/prisma/migrations/
+
+# ========================
+# Editor / IDE
+# ========================
+.vscode/
+.idea/
+*.suo
+*.sw?
+
+# ========================
+# OS
+# ========================
+.DS_Store
+Thumbs.db
