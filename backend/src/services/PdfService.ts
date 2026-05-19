@@ -2,7 +2,7 @@
  * @fileoverview Servicio que encapsula la lógica de negocio y consultas a la base de datos para la entidad de Pdf.
  * Descripción generada automáticamente para documentar la funcionalidad principal del archivo.
  */
-const PdfPrinter = require('pdfmake/js/printer').default || require('pdfmake/js/printer');
+const pdfmake = require('pdfmake');
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
 
 // Fuentes genéricas
@@ -15,7 +15,7 @@ const fonts = {
     }
 };
 
-const printer = new PdfPrinter(fonts);
+pdfmake.setFonts(fonts);
 
 export interface PrescriptionData {
     doctorName: string;
@@ -95,22 +95,12 @@ class PdfService {
                     }
                 };
 
-                const pdfDoc = printer.createPdfKitDocument(docDefinition);
-                const chunks: Uint8Array[] = [];
-
-                pdfDoc.on('data', (chunk: Uint8Array) => {
-                    chunks.push(chunk);
-                });
-
-                pdfDoc.on('end', () => {
-                    resolve(Buffer.concat(chunks));
-                });
-
-                pdfDoc.on('error', (err: any) => {
+                const pdfDoc = pdfmake.createPdf(docDefinition);
+                pdfDoc.getBuffer().then((buffer: Buffer) => {
+                    resolve(buffer);
+                }).catch((err: any) => {
                     reject(err);
                 });
-
-                pdfDoc.end();
             } catch (error) {
                 reject(error);
             }
