@@ -2,22 +2,40 @@
  * @fileoverview Punto de entrada principal del backend. Inicia el servidor HTTP y escucha conexiones.
  * Descripción generada automáticamente para documentar la funcionalidad principal del archivo.
  */
-// Carga las variables de entorno PRIMERO, antes de cualquier otra importación
+
+// Global error handlers to catch silent crashes
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL ERROR: Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL ERROR: Unhandled Rejection:', reason);
+});
+
+console.log('1. Cargando variables de entorno...');
 require('dotenv').config();
 
-// Importa la aplicación configurada (middlewares y rutas)
+console.log('2. Importando aplicación Express...');
 import app from './app';
+
+console.log('3. Importando configuración de Prisma...');
 import prisma from './config/prisma';
 
-// Usa el puerto definido en .env o 3000 como valor por defecto
 const PORT = process.env.PORT || 3000;
 
-// Verifica la conexión a MariaDB e inicia el servidor
-// Inicia el servidor sin forzar la conexión previa a la BD (Prisma se conecta on-demand)
+console.log('4. Intentando arrancar el servidor en el puerto:', PORT);
+
 function main() {
-    app.listen(PORT, () => {
-        console.log(`Server running in ${process.env.NODE_ENV || 'production'} mode on port ${PORT}`);
-    });
+    try {
+        const server = app.listen(PORT, () => {
+            console.log(`5. ¡Servidor arrancado con éxito en el puerto ${PORT}!`);
+        });
+
+        server.on('error', (error) => {
+            console.error('Error al intentar escuchar en el puerto:', error);
+        });
+    } catch (error) {
+        console.error('Error capturado durante el arranque:', error);
+    }
 }
 
 main();
