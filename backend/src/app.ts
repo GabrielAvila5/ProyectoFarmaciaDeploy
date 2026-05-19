@@ -7,6 +7,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
 // Middleware global para manejar errores
 import errorHandler from './middlewares/errorHandler';
 // Rutas de productos y ventas
@@ -65,9 +66,18 @@ app.use('/api/cash-audits', cashAuditRoutes); // Cortes de Caja (Auditoría)
 // Servir estáticamente los archivos subidos (fotos médicas)
 app.use('/uploads', express.static('uploads'));
 
-// Ruta raíz: confirma que la API está activa
-app.get('/', (_req, res) => {
-    res.send('API is running...');
+// Servir el frontend compilado (React/Vite) de forma estática
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendPath));
+
+// Cualquier otra ruta que no sea de la API (/api/...) se redirige al index.html de React
+// Esto es necesario para que funcione el React Router
+app.get('*', (req, res, next) => {
+    // Si la ruta empieza con /api/, pasamos al siguiente middleware (manejo de error 404 de la API)
+    if (req.path.startsWith('/api/')) {
+        return next();
+    }
+    res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // Error Handler: captura cualquier error lanzado en las rutas y lo formatea
