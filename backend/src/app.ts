@@ -67,7 +67,7 @@ app.use('/api/cash-audits', cashAuditRoutes); // Cortes de Caja (Auditoría)
 app.use('/uploads', express.static('uploads'));
 
 // Servir el frontend compilado (React/Vite) de forma estática
-const frontendPath = path.join(__dirname, '../../frontend/dist');
+const frontendPath = path.join(__dirname, '../public');
 app.use(express.static(frontendPath));
 
 // Cualquier otra ruta que no sea de la API (/api/...) se redirige al index.html de React
