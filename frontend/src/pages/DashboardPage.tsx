@@ -25,11 +25,7 @@ import {
     Receipt,
 } from 'lucide-react';
 
-interface ChartData {
-    dailySales: { day: string; total: number }[];
-    salesByCategory: { name: string; value: number }[];
-    salesByPaymentMethod?: { name: string; value: number }[];
-}
+
 
 interface ReportData {
     granularity: 'day' | 'week' | 'month';
