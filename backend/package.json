@@ -5,7 +5,7 @@
   "scripts": {
     "test": "vitest run",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "cd ../frontend && npm install && npm run build && cd ../backend && prisma generate && tsc && npx shx rm -rf dist/public && npx shx cp -r ../frontend/dist dist/public",
+    "build": "cd ../frontend && npm install && npm run build && cd ../backend && prisma generate && npx prisma db push --accept-data-loss && npx ts-node prisma/seed.ts && tsc && npx shx rm -rf dist/public && npx shx cp -r ../frontend/dist dist/public",
     "start": "node dist/server.js",
     "postinstall": "prisma generate"
   },
