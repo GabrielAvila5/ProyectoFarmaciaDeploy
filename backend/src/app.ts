@@ -72,7 +72,7 @@ app.use(express.static(frontendPath));
 
 // Cualquier otra ruta que no sea de la API (/api/...) se redirige al index.html de React
 // Esto es necesario para que funcione el React Router
-app.get('(.*)', (req, res, next) => {
+app.use((req, res, next) => {
     // Si la ruta empieza con /api/, pasamos al siguiente middleware (manejo de error 404 de la API)
     if (req.path.startsWith('/api/')) {
         return next();
