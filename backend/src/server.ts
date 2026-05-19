@@ -12,8 +12,8 @@ import app from './app';
 // Cliente Prisma para verificar conexión a la base de datos
 import prisma from './config/prisma';
 
-// Usa el puerto definido en .env o 5000 como valor por defecto
-const PORT = process.env.PORT || 5000;
+// Usa el puerto definido en .env o 3000 como valor por defecto
+const PORT = process.env.PORT || 3000;
 
 // Verifica la conexión a MariaDB e inicia el servidor
 async function main() {
